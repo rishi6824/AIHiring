@@ -1,3 +1,4 @@
+#use of python 3.9
 Flask==2.3.3
 nltk==3.8.1
 textblob==0.17.1
