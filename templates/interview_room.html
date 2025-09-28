@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Room - Question {{ question_num }}{% endblock %}
+
+{% block content %}
+<div class="interview-room">
+    <div class="container">
+        <div class="interview-header">
+            <h2>AI Interview Session</h2>
+            <div class="progress-info">
+                Question {{ question_num }} of {{ total_questions }}
+                <div class="timer" id="timer">03:00</div>
+            </div>
+        </div>
+
+        <div class="interview-content">
+            <!-- Video Feed -->
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="interviewVideo" autoplay muted playsinline></video>
+                    <div class="video-overlay">
+                        <div class="recording-indicator" id="recordingIndicator" style="display: none;">
+                            <span class="recording-dot"></span>
+                            Recording Audio
+                        </div>
+                    </div>
+                </div>
+                <div class="video-controls">
+                    <button id="toggleVideo" class="btn btn-secondary">📹 Hide Video</button>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div class="question-section">
+                <div class="question-card">
+                    <h3>{{ question.question }}</h3>
+                    <div class="question-meta">
+                        <span class="question-type">{{ question.type|title }} Question</span>
+                    </div>
+                </div>
+
+                <!-- Answer Section -->
+                <div class="answer-section">
+                    <form id="answerForm">
+                        <div class="form-group">
+                            <label for="answer">Your Answer:</label>
+                            <textarea id="answer" name="answer" rows="6" 
+                                      placeholder="Type your answer here or use the voice button to speak your answer..." 
+                                      required></textarea>
+                        </div>
+
+                        <!-- Voice Input Section -->
+                        <div class="voice-section">
+                            <div class="voice-controls">
+                                <button type="button" id="voiceButton" class="btn btn-voice">
+                                    🎤 Start Speaking
+                                </button>
+                                <button type="button" id="stopVoiceButton" class="btn btn-secondary" style="display: none;">
+                                    ⏹️ Stop
+                                </button>
+                            </div>
+                            <div id="voiceStatus" class="voice-status">
+                                Click the microphone to speak your answer
+                            </div>
+                            <div id="voicePreview" class="voice-preview"></div>
+                            
+                            <!-- Audio Visualizer -->
+                            <div class="audio-visualizer">
+                                <canvas id="visualizer" width="300" height="50" style="display: none;"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button type="submit" class="btn btn-primary">Submit Answer</button>
+                            <button type="button" id="skipButton" class="btn btn-secondary">Skip Question</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Section -->
+        <div id="feedbackSection" class="feedback-section" style="display: none;">
+            <h4>Feedback:</h4>
+            <div id="feedbackContent"></div>
+            <button id="nextQuestionBtn" class="btn btn-primary">Next Question</button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Analyzing your answer...</p>
+</div>
+
+<script src="{{ url_for('static', filename='js/voice-recognition.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize camera
+    async function initializeCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: true, 
+                audio: true  // Enable audio for voice recording
+            });
+            document.getElementById('interviewVideo').srcObject = stream;
+            
+            // Initialize voice recognition with the audio stream
+            voiceRecognition.initialize(stream);
+        } catch (error) {
+            console.log('Camera/Microphone not available:', error);
+        }
+    }
+    initializeCamera();
+
+    // Timer functionality
+    let timeLeft = 180; // 3 minutes
+    const timerElement = document.getElementById('timer');
+    
+    const timer = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            document.getElementById('answerForm').dispatchEvent(new Event('submit'));
+        }
+    }, 1000);
+
+    // Voice recognition event listeners
+    document.getElementById('voiceButton').addEventListener('click', function() {
+        voiceRecognition.startListening();
+        updateVoiceUI('listening');
+    });
+
+    document.getElementById('stopVoiceButton').addEventListener('click', function() {
+        voiceRecognition.stopListening();
+        updateVoiceUI('stopped');
+    });
+
+    function updateVoiceUI(state) {
+        const voiceButton = document.getElementById('voiceButton');
+        const stopButton = document.getElementById('stopVoiceButton');
+        const status = document.getElementById('voiceStatus');
+        const visualizer = document.getElementById('visualizer');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+
+        switch(state) {
+            case 'listening':
+                voiceButton.style.display = 'none';
+                stopButton.style.display = 'inline-block';
+                status.textContent = 'Listening... Speak now';
+                status.className = 'voice-status listening';
+                visualizer.style.display = 'block';
+                recordingIndicator.style.display = 'block';
+                break;
+            case 'stopped':
+                voiceButton.style.display = 'inline-block';
+                stopButton.style.display = 'none';
+                status.textContent = 'Voice input ready';
+                status.className = 'voice-status ready';
+                visualizer.style.display = 'none';
+                recordingIndicator.style.display = 'none';
+                break;
+            case 'error':
+                voiceButton.style.display = 'inline-block';
+                stopButton.style.display = 'none';
+                status.textContent = 'Voice input error - try again';
+                status.className = 'voice-status error';
+                visualizer.style.display = 'none';
+                recordingIndicator.style.display = 'none';
+                break;
+        }
+    }
+
+    // Update answer text when voice recognition returns results
+    voiceRecognition.onResult = function(transcript) {
+        const answerTextarea = document.getElementById('answer');
+        answerTextarea.value = transcript;
+        document.getElementById('voicePreview').textContent = transcript;
+    };
+
+    // Form submission
+    document.getElementById('answerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const answer = document.getElementById('answer').value;
+        if (!answer.trim()) {
+            alert('Please provide an answer before submitting.');
+            return;
+        }
+        
+        // Show loading
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        
+        // Submit answer
+        const formData = new FormData(this);
+        
+        fetch('/submit_answer', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            
+            // Show feedback
+            document.getElementById('feedbackContent').innerHTML = `
+                <p><strong>Score:</strong> ${data.score}/10</p>
+                <p><strong>Feedback:</strong> ${data.feedback}</p>
+            `;
+            
+            document.getElementById('feedbackSection').style.display = 'block';
+            
+            // Scroll to feedback
+            document.getElementById('feedbackSection').scrollIntoView({ behavior: 'smooth' });
+            
+            // Stop timer
+            clearInterval(timer);
+
+            // Handle completion
+            if (data.completed) {
+                document.getElementById('nextQuestionBtn').textContent = 'View Results';
+                document.getElementById('nextQuestionBtn').onclick = function() {
+                    window.location.href = '/results';
+                };
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('loadingOverlay').style.display = 'none';
+            alert('Error submitting answer. Please try again.');
+        });
+    });
+
+    // Next question button
+    document.getElementById('nextQuestionBtn').addEventListener('click', function() {
+        if (this.textContent === 'View Results') {
+            window.location.href = '/results';
+        } else {
+            window.location.reload();
+        }
+    });
+
+    // Skip question
+    document.getElementById('skipButton').addEventListener('click', function() {
+        if (confirm('Are you sure you want to skip this question?')) {
+            document.getElementById('answer').value = '[Skipped]';
+            document.getElementById('answerForm').dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Video controls
+    document.getElementById('toggleVideo').addEventListener('click', function() {
+        const video = document.getElementById('interviewVideo');
+        if (video.style.display === 'none') {
+            video.style.display = 'block';
+            this.textContent = '📹 Hide Video';
+        } else {
+            video.style.display = 'none';
+            this.textContent = '📹 Show Video';
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        clearInterval(timer);
+        voiceRecognition.stopListening();
+    });
+});
+</script>
+{% endblock %}

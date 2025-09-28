@@ -1,0 +1,46 @@
+{
+  "software_engineer": [
+    {
+      "question": "Can you explain object-oriented programming and its main principles?",
+      "type": "technical",
+      "keywords": ["encapsulation", "inheritance", "polymorphism", "abstraction", "classes", "objects"]
+    },
+    {
+      "question": "Describe a challenging technical problem you solved and how you approached it.",
+      "type": "behavioral",
+      "keywords": ["problem", "solution", "approach", "challenge", "result", "learning"]
+    },
+    {
+      "question": "How do you ensure code quality and what testing methodologies do you use?",
+      "type": "technical",
+      "keywords": ["testing", "quality", "unit tests", "integration", "code review", "best practices"]
+    },
+    {
+      "question": "Tell me about a time you had to work under pressure to meet a deadline.",
+      "type": "situational",
+      "keywords": ["deadline", "pressure", "time management", "prioritization", "teamwork", "delivery"]
+    },
+    {
+      "question": "What interests you about our company and this specific role?",
+      "type": "motivational",
+      "keywords": ["company", "values", "mission", "role", "growth", "contribution"]
+    }
+  ],
+  "data_scientist": [
+    {
+      "question": "Explain the difference between supervised and unsupervised learning.",
+      "type": "technical",
+      "keywords": ["supervised", "unsupervised", "labeled data", "clustering", "classification", "training"]
+    },
+    {
+      "question": "How do you handle missing data in a dataset?",
+      "type": "technical",
+      "keywords": ["missing data", "imputation", "removal", "analysis", "strategy", "impact"]
+    },
+    {
+      "question": "Describe a data analysis project from conception to completion.",
+      "type": "behavioral",
+      "keywords": ["project", "analysis", "results", "impact", "methodology", "conclusion"]
+    }
+  ]
+}

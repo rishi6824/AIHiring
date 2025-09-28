@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Home - AI Interview Assistant{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1>AI-Powered Interview Preparation</h1>
+        <p>Practice with our intelligent interview system and get instant feedback on your responses</p>
+        
+        <div class="cta-section">
+            <h2>Start Your Interview</h2>
+            <form action="{{ url_for('start_video_interview') }}" method="POST" class="interview-form">
+                <div class="form-group">
+                    <label for="job_role">Select Job Role:</label>
+                    <select name="job_role" id="job_role" required>
+                        <option value="software_engineer">Software Engineer</option>
+                        <option value="data_scientist">Data Scientist</option>
+                        <option value="product_manager">Product Manager</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="enable_voice" value="true" checked>
+                        Enable Voice Input
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Start Video Interview</button>
+            </form>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <h3>Resume Analysis</h3>
+                <p>Upload your resume for skill extraction and analysis</p>
+                <a href="{{ url_for('analyze_resume') }}" class="btn btn-secondary">Analyze Resume</a>
+            </div>
+            
+            <div class="feature-card">
+                <h3>AI-Powered Questions</h3>
+                <p>Get personalized questions based on your resume</p>
+                <p>Real-time feedback and scoring</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

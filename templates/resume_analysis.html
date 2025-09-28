@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Analysis{% endblock %}
+
+{% block content %}
+<div class="resume-analysis">
+    <div class="container">
+        <h2>Resume Analysis</h2>
+        
+        <div class="upload-section">
+            <form action="{{ url_for('analyze_resume') }}" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="resume">Upload Your Resume (PDF, DOCX, TXT):</label>
+                    <input type="file" id="resume" name="resume" accept=".pdf,.docx,.txt" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Analyze Resume</button>
+            </form>
+        </div>
+
+        {% if analysis %}
+        <div class="analysis-results">
+            <!-- Overall Score -->
+            <div class="score-section">
+                <h3>Overall Score</h3>
+                <div class="score-circle">
+                    <span class="score">{{ "%.1f"|format(analysis.scores.overall_score) }}/10</span>
+                </div>
+                <div class="score-breakdown">
+                    <div class="score-item">
+                        <span class="score-label">Skills Score:</span>
+                        <span class="score-value">{{ "%.1f"|format(analysis.scores.skills_score) }}/10</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Experience Score:</span>
+                        <span class="score-value">{{ "%.1f"|format(analysis.scores.experience_score) }}/10</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Education Score:</span>
+                        <span class="score-value">{{ "%.1f"|format(analysis.scores.education_score) }}/10</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Analysis -->
+            <div class="skills-section">
+                <h3>Skills Analysis</h3>
+                {% for category, skills in analysis.skills.items() %}
+                <div class="skill-category">
+                    <h4>{{ category|replace('_', ' ')|title }}</h4>
+                    <div class="skill-tags">
+                        {% for skill in skills %}
+                        <span class="skill-tag">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Experience & Education -->
+            <div class="details-section">
+                <div class="detail-column">
+                    <h3>Experience</h3>
+                    <p><strong>Years of Experience:</strong> {{ analysis.experience.years }}</p>
+                    {% if analysis.experience.companies %}
+                    <p><strong>Companies Mentioned:</strong></p>
+                    <ul>
+                        {% for company in analysis.experience.companies %}
+                        <li>{{ company }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                
+                <div class="detail-column">
+                    <h3>Education</h3>
+                    {% if analysis.education.degrees %}
+                    <p><strong>Degrees:</strong></p>
+                    <ul>
+                        {% for degree in analysis.education.degrees %}
+                        <li>{{ degree|title }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if analysis.education.institutions %}
+                    <p><strong>Institutions:</strong></p>
+                    <ul>
+                        {% for institution in analysis.education.institutions %}
+                        <li>{{ institution }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="recommendations-section">
+                <h3>Recommendations</h3>
+                <ul>
+                    {% for recommendation in analysis.recommendations %}
+                    <li>{{ recommendation }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Start Interview Button -->
+            <div class="action-section">
+                <form action="{{ url_for('start_video_interview') }}" method="POST">
+                    <input type="hidden" name="job_role" value="software_engineer">
+                    <input type="hidden" name="enable_voice" value="true">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        Start Video Interview with AI
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

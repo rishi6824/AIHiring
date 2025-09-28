@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Results{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="container">
+        <div class="results-header">
+            <h2>Interview Results</h2>
+            <div class="overall-score">
+                <div class="score-circle">
+                    <span class="score">{{ "%.1f"|format(percentage) }}%</span>
+                </div>
+                <p>Overall Score</p>
+            </div>
+        </div>
+
+        <div class="results-summary">
+            <h3>Performance Summary</h3>
+            <div class="summary-stats">
+                <div class="stat">
+                    <span class="stat-value">{{ responses|length }}</span>
+                    <span class="stat-label">Questions Answered</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">{{ "%.1f"|format(score) }}/{{ responses|length * 10 }}</span>
+                    <span class="stat-label">Total Score</span>
+                </div>
+            </div>
+        </div>
+
+        {% if overall_feedback %}
+        <div class="overall-feedback">
+            <h3>Overall Feedback</h3>
+            <p>{{ overall_feedback }}</p>
+        </div>
+        {% endif %}
+
+        <div class="detailed-results">
+            <h3>Detailed Feedback</h3>
+            {% for response in responses %}
+            <div class="response-card">
+                <div class="response-header">
+                    <h4>Question {{ loop.index }}</h4>
+                    <span class="score-badge">{{ response.score }}/10</span>
+                </div>
+                <div class="response-content">
+                    <p><strong>Question:</strong> {{ response.question }}</p>
+                    <p><strong>Your Answer:</strong> {{ response.answer }}</p>
+                    <p><strong>Feedback:</strong> {{ response.feedback }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="action-buttons">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Start New Interview</a>
+            <a href="{{ url_for('analyze_resume') }}" class="btn btn-secondary">Analyze Another Resume</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
