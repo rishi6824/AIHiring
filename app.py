@@ -9,6 +9,7 @@ from models.speech_processor import SpeechProcessor
 from models.question_generator import QuestionGenerator
 from utils.helpers import allowed_file, calculate_score, clean_text
 import secrets
+import ssl
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -21,6 +22,14 @@ ai_interviewer = AIInterviewer()
 resume_analyzer = ResumeAnalyzer()
 speech_processor = SpeechProcessor()
 question_generator = QuestionGenerator()
+
+# Add CORS headers for microphone access
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 @app.route('/')
 def index():
@@ -81,6 +90,44 @@ def debug_start_interview_direct():
     
     return redirect(url_for('interview_room'))
 
+
+@app.route('/debug_interview_state')
+def debug_interview_state():
+    """Debug current interview state"""
+    if 'interview_id' not in session:
+        return jsonify({'error': 'No active interview'})
+    
+    return jsonify({
+        'current_question': session['current_question'],
+        'total_questions': len(session['questions']),
+        'questions': session['questions'],
+        'completed': session['current_question'] >= len(session['questions'])
+    })
+
+
+@app.route('/check_permissions')
+def check_permissions():
+    """Check if browser supports media devices"""
+    return jsonify({
+        'https': request.is_secure,
+        'host': request.host,
+        'scheme': request.scheme
+    })
+
+@app.route('/auto_next_question')
+def auto_next_question():
+    """Automatically redirect to next question or results"""
+    if 'interview_id' not in session:
+        return redirect(url_for('index'))
+    
+    current_q = session['current_question']
+    questions = session['questions']
+    
+    if current_q >= len(questions):
+        return redirect(url_for('results'))
+    else:
+        return redirect(url_for('interview_room'))
+
 @app.route('/analyze_resume', methods=['GET', 'POST'])
 def analyze_resume():
     if request.method == 'POST':
@@ -115,6 +162,27 @@ def analyze_resume():
 def chatbot_page():
     return render_template('chatbot.html')
 
+@app.route('/test_camera')
+def test_camera():
+    return render_template('test_camera.html')
+
+@app.route('/test_questions')
+def test_questions():
+    """Test question flow"""
+    session.clear()
+    questions = [
+        {'question': 'Question 1: Tell me about yourself', 'type': 'behavioral'},
+        {'question': 'Question 2: What are your strengths?', 'type': 'behavioral'},
+        {'question': 'Question 3: Where do you see yourself in 5 years?', 'type': 'behavioral'}
+    ]
+    
+    session['interview_id'] = 'test'
+    session['current_question'] = 0
+    session['questions'] = questions
+    session['responses'] = []
+    
+    return redirect('/interview_room')
+
 @app.route('/start_video_interview', methods=['POST'])
 def start_video_interview():
     session.clear()
@@ -134,7 +202,7 @@ def start_video_interview():
     session['questions'] = questions
     session['job_role'] = job_role
     session['start_time'] = datetime.now().isoformat()
-    session['enable_voice'] = True  # Enable voice input
+    session['enable_voice'] = True
     
     return redirect(url_for('video_interview'))
 
@@ -154,6 +222,7 @@ def interview_room():
     current_q = session['current_question']
     questions = session['questions']
     
+    # Check if interview is completed
     if current_q >= len(questions):
         return redirect(url_for('results'))
     
@@ -165,15 +234,25 @@ def interview_room():
                          enable_voice=session.get('enable_voice', True))
     
     
-
-
 @app.route('/submit_answer', methods=['POST'])
 def submit_answer():
     if 'interview_id' not in session:
         return jsonify({'error': 'No active interview'}), 400
     
-    answer = request.form.get('answer', '')
     current_q = session['current_question']
+    questions = session['questions']
+    
+    # Check if we've exceeded the question count
+    if current_q >= len(questions):
+        return jsonify({
+            'completed': True,
+            'next_question': current_q,
+            'score': 0,
+            'feedback': 'Interview completed!',
+            'detailed_analysis': {}
+        })
+    
+    answer = request.form.get('answer', '')
     job_role = session['job_role']
     resume_analysis = session.get('resume_analysis', {})
     
@@ -182,25 +261,38 @@ def submit_answer():
         job_role, current_q, answer, resume_analysis
     )
     
+    # Add AI personality to feedback
+    if score >= 8:
+        ai_feedback = f"Excellent! {feedback} That was a well-structured response."
+    elif score >= 6:
+        ai_feedback = f"Good job. {feedback} You're on the right track."
+    elif score >= 4:
+        ai_feedback = f"Okay. {feedback} Let's work on improving this."
+    else:
+        ai_feedback = f"I see. {feedback} We'll practice more on this area."
+    
     # Store response
     session['responses'].append({
         'question_index': current_q,
-        'question': session['questions'][current_q]['question'],
+        'question': questions[current_q]['question'],
         'answer': answer,
         'score': score,
-        'feedback': feedback,
+        'feedback': ai_feedback,
         'detailed_analysis': detailed_analysis
     })
     
     session['score'] += score
     session['current_question'] += 1
     
+    # Check if interview is completed
+    completed = session['current_question'] >= len(questions)
+    
     return jsonify({
         'next_question': session['current_question'],
         'score': score,
-        'feedback': feedback,
+        'feedback': ai_feedback,
         'detailed_analysis': detailed_analysis,
-        'completed': session['current_question'] >= len(session['questions'])
+        'completed': completed
     })
 
 @app.route('/process_voice', methods=['POST'])
@@ -274,5 +366,62 @@ def get_next_question():
         'type': question.get('type', 'technical')
     })
 
+def create_ssl_context():
+    """Create SSL context with fallback"""
+    try:
+        # Method 1: Use existing certificate files
+        if os.path.exists('cert.pem') and os.path.exists('key.pem'):
+            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            context.load_cert_chain('cert.pem', 'key.pem')
+            return context
+        else:
+            # Method 2: Create self-signed certificate programmatically
+            from OpenSSL import crypto
+            import tempfile
+            
+            # Create a key pair
+            k = crypto.PKey()
+            k.generate_key(crypto.TYPE_RSA, 4096)
+            
+            # Create a self-signed cert
+            cert = crypto.X509()
+            cert.get_subject().C = "US"
+            cert.get_subject().ST = "State"
+            cert.get_subject().L = "City"
+            cert.get_subject().O = "Organization"
+            cert.get_subject().OU = "Organization Unit"
+            cert.get_subject().CN = "localhost"
+            cert.set_serial_number(1000)
+            cert.gmtime_adj_notBefore(0)
+            cert.gmtime_adj_notAfter(365*24*60*60)
+            cert.set_issuer(cert.get_subject())
+            cert.set_pubkey(k)
+            cert.sign(k, 'sha512')
+            
+            # Save certificate and key to temporary files
+            with open('cert.pem', 'wt') as f:
+                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode('utf-8'))
+            with open('key.pem', 'wt') as f:
+                f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k).decode('utf-8'))
+            
+            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            context.load_cert_chain('cert.pem', 'key.pem')
+            return context
+            
+    except Exception as e:
+        print(f"SSL context creation failed: {e}")
+        return None
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Try to run with HTTPS first
+    ssl_context = create_ssl_context()
+    
+    if ssl_context:
+        print("🚀 Running with HTTPS on https://localhost:5000")
+        print("📹 Camera and microphone should work now!")
+        print("🔐 Make sure to access via: https://localhost:5000")
+        app.run(debug=True, ssl_context=ssl_context, host='0.0.0.0', port=5000)
+    else:
+        print("⚠️  Running without HTTPS - camera/microphone won't work")
+        print("💡 To fix this, run: openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365 -subj '/C=US/ST=State/L=City/O=Organization/CN=localhost'")
+        app.run(debug=True, host='0.0.0.0', port=5000)

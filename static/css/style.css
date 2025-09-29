@@ -544,3 +544,282 @@ body {
     bottom: 0;
     pointer-events: none;
 }
+/* Timer Styles */
+.timer-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.timer-section {
+    text-align: center;
+}
+
+.timer-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.timer {
+    font-size: 2rem;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    background: #f8f9fa;
+    border: 3px solid #dee2e6;
+    min-width: 80px;
+    transition: all 0.3s;
+}
+
+.timer.active {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+    animation: pulse 1s infinite;
+}
+
+.timer.warning {
+    background: #e74c3c;
+    color: white;
+    border-color: #c0392b;
+    animation: pulse 0.5s infinite;
+}
+
+.timer.completed {
+    background: #27ae60;
+    color: white;
+    border-color: #219a52;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Status Indicator */
+.status-indicator {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(52, 152, 219, 0.9);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+    animation: status-pulse 2s infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Question Card States */
+.question-card.minimized {
+    transform: scale(0.95);
+    opacity: 0.8;
+    transition: all 0.3s;
+}
+
+.time-info {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+}
+
+/* Auto Next Countdown */
+.auto-next-countdown {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    padding: 1rem;
+    margin: 1rem 0;
+    text-align: center;
+    font-weight: bold;
+    color: #856404;
+}
+
+.auto-next-countdown span {
+    font-size: 1.2rem;
+    color: #e74c3c;
+}
+
+/* Answer Section Transition */
+.answer-section {
+    transition: all 0.5s ease-in-out;
+}
+
+/* Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 5px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    margin: 1rem 0;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #3498db;
+    border-radius: 5px;
+    transition: width 1s linear;
+}
+
+/* AI Speaking Styles */
+.ai-speaking-indicator {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.ai-avatar {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.ai-speech-bubble {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 20px;
+    padding: 15px 20px;
+    max-width: 300px;
+    position: relative;
+}
+
+.ai-speech-bubble::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 20px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid #e9ecef;
+}
+
+.ai-speech-bubble.speaking {
+    border-color: #3498db;
+    background: #e3f2fd;
+    animation: pulse-glow 1.5s infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(52, 152, 219, 0.8); }
+}
+
+.ai-speech-bubble p {
+    margin: 0;
+    font-weight: 500;
+    color: #2c3e50;
+    line-height: 1.4;
+}
+
+/* Audio Controls */
+.audio-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: center;
+}
+
+.btn-small {
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+/* Timer States */
+.timer.ai-speaking {
+    background: #9b59b6;
+    color: white;
+    border-color: #8e44ad;
+}
+
+/* Status Indicator Colors */
+.status-indicator[data-status="ai_speaking"] {
+    background: rgba(155, 89, 182, 0.9);
+}
+
+.status-indicator[data-status="listening"] {
+    background: rgba(52, 152, 219, 0.9);
+}
+
+.status-indicator[data-status="answering"] {
+    background: rgba(46, 204, 113, 0.9);
+}
+
+.status-indicator[data-status="feedback"] {
+    background: rgba(241, 196, 15, 0.9);
+}
+
+/* Enhanced voice section for response */
+.voice-section {
+    border-left: 4px solid #3498db;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Response-specific styling */
+.answer-section .form-group label {
+    color: #2c3e50;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.answer-section textarea {
+    border: 2px solid #3498db;
+    background: white;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.answer-section textarea:focus {
+    border-color: #2980b9;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+}

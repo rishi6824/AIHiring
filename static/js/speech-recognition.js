@@ -114,5 +114,8 @@ class SpeechRecognitionHandler {
     }
 }
 
+
+
 // Global instance
 const speechHandler = new SpeechRecognitionHandler();
+

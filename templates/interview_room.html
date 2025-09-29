@@ -5,11 +5,47 @@
 {% block content %}
 <div class="interview-room">
     <div class="container">
+        <!-- Permission Warning - NOW VISIBLE -->
+        <div id="permissionWarning" class="permission-warning" style="display: block;">
+            <div class="warning-content">
+                <h4>🎥 Camera & Microphone Required</h4>
+                <p>This interview requires camera and microphone access to function properly.</p>
+                <div class="permission-steps">
+                    <p><strong>To start your interview:</strong></p>
+                    <ol>
+                        <li>Click the button below</li>
+                        <li>Allow camera and microphone when prompted</li>
+                        <li>The AI will speak the questions to you</li>
+                    </ol>
+                </div>
+                <button id="requestPermissions" class="btn btn-primary btn-large">
+                    🎤 Start Interview & Enable Camera
+                </button>
+                <div id="permissionHelp" class="permission-help" style="display: none; margin-top: 1rem;">
+                    <p><strong>Having issues?</strong></p>
+                    <ul>
+                        <li>Make sure you're using <strong>HTTPS</strong></li>
+                        <li>Check for camera/microphone icons in address bar</li>
+                        <li>Refresh the page and try again</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <div class="interview-header">
             <h2>AI Interview Session</h2>
             <div class="progress-info">
                 Question {{ question_num }} of {{ total_questions }}
-                <div class="timer" id="timer">03:00</div>
+                <div class="timer-container">
+                    <div class="timer-section">
+                        <span class="timer-label">Listening:</span>
+                        <div class="timer" id="listeningTimer">10</div>
+                    </div>
+                    <div class="timer-section">
+                        <span class="timer-label">Answer Time:</span>
+                        <div class="timer" id="answerTimer">30</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -17,35 +53,58 @@
             <!-- Video Feed -->
             <div class="video-section">
                 <div class="video-container">
-                    <video id="interviewVideo" autoplay muted playsinline></video>
+                    <video id="interviewVideo" autoplay muted playsinline style="display: none;"></video>
+                    <div id="cameraPlaceholder" class="camera-placeholder">
+                        <div class="placeholder-content">
+                            <div class="placeholder-icon">📹</div>
+                            <p>Camera feed will appear here after granting permissions</p>
+                            <button id="enableCamera" class="btn btn-primary">Enable Camera</button>
+                        </div>
+                    </div>
                     <div class="video-overlay">
+                        <div class="status-indicator" id="statusIndicator">
+                            <span class="status-dot"></span>
+                            <span id="statusText">Click "Start Interview" to begin</span>
+                        </div>
+                        <div class="ai-speaking-indicator" id="aiSpeakingIndicator" style="display: none;">
+                            <div class="ai-avatar">🤖</div>
+                            <div class="ai-speech-bubble" id="aiSpeechBubble">
+                                <p id="aiQuestionText">{{ question.question }}</p>
+                            </div>
+                        </div>
                         <div class="recording-indicator" id="recordingIndicator" style="display: none;">
                             <span class="recording-dot"></span>
-                            Recording Audio
+                            You are Speaking
                         </div>
                     </div>
                 </div>
-                <div class="video-controls">
-                    <button id="toggleVideo" class="btn btn-secondary">📹 Hide Video</button>
+                <div class="audio-controls">
+                    <button id="repeatQuestion" class="btn btn-small" disabled>
+                        🔁 Repeat Question
+                    </button>
+                    <button id="muteAI" class="btn btn-small" disabled>
+                        🔇 Mute AI
+                    </button>
                 </div>
             </div>
 
             <!-- Question Section -->
             <div class="question-section">
-                <div class="question-card">
-                    <h3>{{ question.question }}</h3>
+                <div class="question-card" id="questionCard">
+                    <h3 id="questionText">{{ question.question }}</h3>
                     <div class="question-meta">
                         <span class="question-type">{{ question.type|title }} Question</span>
+                        <span class="time-info" id="timeInfo">Ready to start interview</span>
                     </div>
                 </div>
 
                 <!-- Answer Section -->
-                <div class="answer-section">
+                <div class="answer-section" id="answerSection" style="display: none;">
                     <form id="answerForm">
                         <div class="form-group">
-                            <label for="answer">Your Answer:</label>
+                            <label for="answer">Your Response:</label>
                             <textarea id="answer" name="answer" rows="6" 
-                                      placeholder="Type your answer here or use the voice button to speak your answer..." 
+                                      placeholder="The AI has asked you a question. Please respond by typing or using voice..." 
                                       required></textarea>
                         </div>
 
@@ -53,14 +112,14 @@
                         <div class="voice-section">
                             <div class="voice-controls">
                                 <button type="button" id="voiceButton" class="btn btn-voice">
-                                    🎤 Start Speaking
+                                    🎤 Speak Your Answer
                                 </button>
                                 <button type="button" id="stopVoiceButton" class="btn btn-secondary" style="display: none;">
-                                    ⏹️ Stop
+                                    ⏹️ Stop Speaking
                                 </button>
                             </div>
                             <div id="voiceStatus" class="voice-status">
-                                Click the microphone to speak your answer
+                                Click the microphone to speak your response
                             </div>
                             <div id="voicePreview" class="voice-preview"></div>
                             
@@ -71,7 +130,7 @@
                         </div>
 
                         <div class="action-buttons">
-                            <button type="submit" class="btn btn-primary">Submit Answer</button>
+                            <button type="submit" class="btn btn-primary">Submit Response</button>
                             <button type="button" id="skipButton" class="btn btn-secondary">Skip Question</button>
                         </div>
                     </form>
@@ -81,9 +140,12 @@
 
         <!-- Feedback Section -->
         <div id="feedbackSection" class="feedback-section" style="display: none;">
-            <h4>Feedback:</h4>
+            <h4>AI Feedback:</h4>
             <div id="feedbackContent"></div>
-            <button id="nextQuestionBtn" class="btn btn-primary">Next Question</button>
+            <div class="auto-next-countdown">
+                Next question in: <span id="nextCountdown">5</span> seconds
+            </div>
+            <button id="nextQuestionBtn" class="btn btn-primary">Next Question Now</button>
         </div>
     </div>
 </div>
@@ -91,54 +153,422 @@
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay" style="display: none;">
     <div class="loading-spinner"></div>
-    <p>Analyzing your answer...</p>
+    <p>AI is analyzing your response...</p>
 </div>
 
 <script src="{{ url_for('static', filename='js/voice-recognition.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize camera
-    async function initializeCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: true, 
-                audio: true  // Enable audio for voice recording
-            });
-            document.getElementById('interviewVideo').srcObject = stream;
+// Text-to-Speech Handler
+class TextToSpeech {
+    constructor() {
+        this.synthesis = window.speechSynthesis;
+        this.isMuted = false;
+        this.currentUtterance = null;
+        console.log('🎵 TTS initialized');
+    }
+
+    speakQuestion(text) {
+        return new Promise((resolve, reject) => {
+            if (this.isMuted) {
+                console.log('🔇 TTS muted, skipping speech');
+                resolve();
+                return;
+            }
+
+            // Stop any current speech
+            this.stop();
+
+            // Create new utterance
+            this.currentUtterance = new SpeechSynthesisUtterance(text);
             
-            // Initialize voice recognition with the audio stream
-            voiceRecognition.initialize(stream);
+            // Configure voice
+            this.currentUtterance.rate = 0.9;
+            this.currentUtterance.pitch = 1.0;
+            this.currentUtterance.volume = 1.0;
+
+            // Set a pleasant voice if available
+            const voices = this.synthesis.getVoices();
+            const englishVoice = voices.find(voice => 
+                voice.lang.includes('en') && voice.name.includes('Female')
+            ) || voices.find(voice => voice.lang.includes('en'));
+            
+            if (englishVoice) {
+                this.currentUtterance.voice = englishVoice;
+            }
+
+            // Event handlers
+            this.currentUtterance.onend = () => {
+                console.log('✅ TTS finished speaking:', text);
+                this.currentUtterance = null;
+                resolve();
+            };
+
+            this.currentUtterance.onerror = (event) => {
+                console.error('❌ TTS error:', event.error);
+                this.currentUtterance = null;
+                reject(event.error);
+            };
+
+            // Start speaking
+            console.log('🗣️ TTS speaking:', text);
+            this.synthesis.speak(this.currentUtterance);
+        });
+    }
+
+    stop() {
+        if (this.synthesis.speaking) {
+            this.synthesis.cancel();
+            console.log('⏹️ TTS stopped');
+        }
+        this.currentUtterance = null;
+    }
+
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        console.log('🔇 TTS muted:', this.isMuted);
+        if (this.isMuted) {
+            this.stop();
+        }
+        return this.isMuted;
+    }
+}
+
+// Interview State Management
+class InterviewTimer {
+    constructor() {
+        this.listeningTime = 10;
+        this.answerTime = 30;
+        this.listeningTimer = null;
+        this.answerTimer = null;
+        this.nextCountdownTimer = null;
+        this.currentState = 'waiting_permissions';
+        this.permissionsGranted = false;
+    }
+
+    async requestPermissions() {
+        try {
+            console.log('🔐 Requesting camera and microphone permissions...');
+            
+            // Show loading state
+            document.getElementById('statusText').textContent = 'Requesting permissions...';
+            document.getElementById('requestPermissions').disabled = true;
+            document.getElementById('requestPermissions').textContent = 'Requesting...';
+            
+            // Request camera and microphone permissions
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: 1280, 
+                    height: 720,
+                    facingMode: 'user'
+                }, 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+            
+            console.log('✅ Permissions granted successfully!');
+            
+            // Permissions granted
+            this.permissionsGranted = true;
+            
+            // Show video, hide placeholder and permission warning
+            document.getElementById('interviewVideo').srcObject = stream;
+            document.getElementById('interviewVideo').style.display = 'block';
+            document.getElementById('cameraPlaceholder').style.display = 'none';
+            document.getElementById('permissionWarning').style.display = 'none';
+            
+            // Initialize voice recognition with the stream
+            if (typeof voiceRecognition !== 'undefined') {
+                voiceRecognition.initialize(stream);
+            }
+            
+            // Enable buttons
+            document.getElementById('repeatQuestion').disabled = false;
+            document.getElementById('muteAI').disabled = false;
+            
+            // Update status
+            document.getElementById('statusText').textContent = 'Permissions granted! Starting interview...';
+            document.getElementById('timeInfo').textContent = 'AI will ask the first question shortly';
+            
+            // Show AI speaking indicator
+            document.getElementById('aiSpeakingIndicator').style.display = 'flex';
+            
+            // Start the interview after a brief delay
+            setTimeout(() => {
+                this.startAISpeakingPhase();
+            }, 2000);
+            
         } catch (error) {
-            console.log('Camera/Microphone not available:', error);
+            console.error('❌ Permission error:', error);
+            this.handlePermissionError(error);
+            
+            // Reset button state
+            document.getElementById('requestPermissions').disabled = false;
+            document.getElementById('requestPermissions').textContent = '🎤 Start Interview & Enable Camera';
         }
     }
-    initializeCamera();
 
-    // Timer functionality
-    let timeLeft = 180; // 3 minutes
-    const timerElement = document.getElementById('timer');
-    
-    const timer = setInterval(() => {
-        timeLeft--;
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    handlePermissionError(error) {
+        document.getElementById('permissionWarning').style.display = 'block';
+        document.getElementById('permissionHelp').style.display = 'block';
         
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            document.getElementById('answerForm').dispatchEvent(new Event('submit'));
+        const statusText = document.getElementById('statusText');
+        const timeInfo = document.getElementById('timeInfo');
+        
+        if (error.name === 'NotAllowedError') {
+            statusText.textContent = 'Permissions denied';
+            timeInfo.textContent = 'Please allow camera and microphone access to continue';
+        } else if (error.name === 'NotFoundError') {
+            statusText.textContent = 'No camera/microphone found';
+            timeInfo.textContent = 'Please check your device connections';
+        } else if (error.name === 'NotSupportedError') {
+            statusText.textContent = 'Browser not supported';
+            timeInfo.textContent = 'Please use Chrome, Edge, or Firefox';
+        } else {
+            statusText.textContent = 'Permission error';
+            timeInfo.textContent = 'Could not access camera/microphone: ' + error.message;
         }
-    }, 1000);
+    }
+
+    startAISpeakingPhase() {
+        if (!this.permissionsGranted) return;
+        
+        this.currentState = 'ai_speaking';
+        const statusText = document.getElementById('statusText');
+        const timeInfo = document.getElementById('timeInfo');
+        const listeningTimerElement = document.getElementById('listeningTimer');
+
+        // Update UI for AI speaking phase
+        statusText.textContent = 'AI is Speaking';
+        timeInfo.textContent = 'Listen carefully to the question...';
+        listeningTimerElement.textContent = this.listeningTime;
+        listeningTimerElement.className = 'timer ai-speaking';
+
+        // Get question text
+        const questionText = document.getElementById('questionText').textContent;
+        const questionNumber = this.getCurrentQuestionNumber();
+        const fullQuestion = `Question ${questionNumber}: ${questionText}`;
+        
+        console.log('🗣️ AI will speak:', fullQuestion);
+
+        // AI speaks the question using TTS
+        textToSpeech.speakQuestion(fullQuestion)
+            .then(() => {
+                console.log('✅ AI finished speaking question');
+                this.startListeningPhase();
+            })
+            .catch(error => {
+                console.error('❌ TTS error, continuing without speech:', error);
+                // Even if TTS fails, continue with the interview
+                this.startListeningPhase();
+            });
+    }
+
+    startListeningPhase() {
+        this.currentState = 'listening';
+        let timeLeft = this.listeningTime;
+        const listeningTimerElement = document.getElementById('listeningTimer');
+        const statusText = document.getElementById('statusText');
+        const timeInfo = document.getElementById('timeInfo');
+        const aiSpeakingIndicator = document.getElementById('aiSpeakingIndicator');
+
+        // Hide AI speaking indicator
+        aiSpeakingIndicator.style.display = 'none';
+
+        // Update UI for listening phase
+        listeningTimerElement.className = 'timer active';
+        statusText.textContent = 'Prepare Your Answer';
+        timeInfo.textContent = `Think about your response: ${this.listeningTime} seconds`;
+
+        this.listeningTimer = setInterval(() => {
+            timeLeft--;
+            listeningTimerElement.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(this.listeningTimer);
+                this.startAnsweringPhase();
+            }
+        }, 1000);
+    }
+
+    startAnsweringPhase() {
+        this.currentState = 'answering';
+        let timeLeft = this.answerTime;
+        const listeningTimerElement = document.getElementById('listeningTimer');
+        const answerTimerElement = document.getElementById('answerTimer');
+        const statusText = document.getElementById('statusText');
+        const timeInfo = document.getElementById('timeInfo');
+        const answerSection = document.getElementById('answerSection');
+        const questionCard = document.getElementById('questionCard');
+
+        // Show answer section
+        answerSection.style.display = 'block';
+        questionCard.classList.add('minimized');
+
+        // Update UI for answering phase
+        listeningTimerElement.className = 'timer completed';
+        answerTimerElement.className = 'timer active';
+        statusText.textContent = 'Answer the Question';
+        timeInfo.textContent = `Respond now: ${this.answerTime} seconds remaining`;
+
+        this.answerTimer = setInterval(() => {
+            timeLeft--;
+            answerTimerElement.textContent = timeLeft;
+
+            if (timeLeft <= 5) {
+                answerTimerElement.classList.add('warning');
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(this.answerTimer);
+                this.submitAnswer();
+            }
+        }, 1000);
+    }
+
+    submitAnswer() {
+        const answer = document.getElementById('answer').value;
+        if (!answer.trim()) {
+            document.getElementById('answer').value = '[No response provided]';
+        }
+        // Trigger form submission
+        document.getElementById('answerForm').dispatchEvent(new Event('submit'));
+    }
+
+    startNextCountdown(seconds = 5) {
+        this.currentState = 'feedback';
+        let timeLeft = seconds;
+        const countdownElement = document.getElementById('nextCountdown');
+        const nextButton = document.getElementById('nextQuestionBtn');
+
+        countdownElement.textContent = timeLeft;
+
+        this.nextCountdownTimer = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(this.nextCountdownTimer);
+                this.goToNextQuestion();
+            }
+        }, 1000);
+
+        nextButton.onclick = () => {
+            clearInterval(this.nextCountdownTimer);
+            this.goToNextQuestion();
+        };
+    }
+
+    goToNextQuestion() {
+        // Simple redirect - let the server handle the logic
+        window.location.href = '/auto_next_question';
+    }
+
+    stopAllTimers() {
+        if (this.listeningTimer) clearInterval(this.listeningTimer);
+        if (this.answerTimer) clearInterval(this.answerTimer);
+        if (this.nextCountdownTimer) clearInterval(this.nextCountdownTimer);
+    }
+
+    getCurrentQuestionNumber() {
+        const progressInfo = document.querySelector('.progress-info');
+        const text = progressInfo ? progressInfo.textContent : '';
+        const match = text.match(/Question (\d+) of/);
+        return match ? match[1] : '1';
+    }
+
+    repeatQuestion() {
+        if (!this.permissionsGranted) return;
+        
+        this.stopAllTimers();
+        const aiSpeakingIndicator = document.getElementById('aiSpeakingIndicator');
+        aiSpeakingIndicator.style.display = 'flex';
+        
+        // Hide answer section temporarily
+        document.getElementById('answerSection').style.display = 'none';
+        
+        // Get question text
+        const questionText = document.getElementById('questionText').textContent;
+        const questionNumber = this.getCurrentQuestionNumber();
+        const fullQuestion = `Question ${questionNumber}: ${questionText}`;
+        
+        console.log('🔁 Repeating question:', fullQuestion);
+        
+        textToSpeech.speakQuestion(fullQuestion)
+            .then(() => {
+                this.startListeningPhase();
+            })
+            .catch(error => {
+                console.error('TTS error:', error);
+                this.startListeningPhase();
+            });
+    }
+}
+
+// Global instances - BOTH ARE NOW CREATED
+const interviewTimer = new InterviewTimer();
+const textToSpeech = new TextToSpeech();
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Interview room initialized');
+    
+    // Check if HTTPS
+    if (location.protocol !== 'https:') {
+        document.getElementById('permissionWarning').style.display = 'block';
+        document.getElementById('permissionHelp').style.display = 'block';
+        document.getElementById('statusText').textContent = 'HTTPS required for permissions';
+        document.getElementById('timeInfo').textContent = 'Please access via HTTPS for camera/microphone';
+    }
+
+    // Request permissions button
+    document.getElementById('requestPermissions').addEventListener('click', function() {
+        console.log('🎯 Start Interview button clicked');
+        interviewTimer.requestPermissions();
+    });
+
+    // Enable camera button
+    document.getElementById('enableCamera').addEventListener('click', function() {
+        console.log('🎯 Enable Camera button clicked');
+        interviewTimer.requestPermissions();
+    });
 
     // Voice recognition event listeners
     document.getElementById('voiceButton').addEventListener('click', function() {
-        voiceRecognition.startListening();
-        updateVoiceUI('listening');
+        if (!interviewTimer.permissionsGranted) {
+            alert('Please start the interview first by clicking "Start Interview"');
+            return;
+        }
+        if (typeof voiceRecognition !== 'undefined') {
+            voiceRecognition.startListening();
+            updateVoiceUI('listening');
+        } else {
+            alert('Voice recognition not available');
+        }
     });
 
     document.getElementById('stopVoiceButton').addEventListener('click', function() {
-        voiceRecognition.stopListening();
-        updateVoiceUI('stopped');
+        if (typeof voiceRecognition !== 'undefined') {
+            voiceRecognition.stopListening();
+            updateVoiceUI('stopped');
+        }
+    });
+
+    // Repeat question button
+    document.getElementById('repeatQuestion').addEventListener('click', function() {
+        if (!interviewTimer.permissionsGranted) {
+            alert('Please start the interview first');
+            return;
+        }
+        interviewTimer.repeatQuestion();
+    });
+
+    // Mute AI button
+    document.getElementById('muteAI').addEventListener('click', function() {
+        const isMuted = textToSpeech.toggleMute();
+        this.textContent = isMuted ? '🔊 Unmute AI' : '🔇 Mute AI';
+        console.log('🔇 AI muted:', isMuted);
     });
 
     function updateVoiceUI(state) {
@@ -152,46 +582,65 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'listening':
                 voiceButton.style.display = 'none';
                 stopButton.style.display = 'inline-block';
-                status.textContent = 'Listening... Speak now';
+                status.textContent = 'Listening... Speak your response now';
                 status.className = 'voice-status listening';
-                visualizer.style.display = 'block';
-                recordingIndicator.style.display = 'block';
+                if (visualizer) visualizer.style.display = 'block';
+                if (recordingIndicator) recordingIndicator.style.display = 'block';
                 break;
             case 'stopped':
                 voiceButton.style.display = 'inline-block';
                 stopButton.style.display = 'none';
-                status.textContent = 'Voice input ready';
+                status.textContent = 'Ready to speak your response';
                 status.className = 'voice-status ready';
-                visualizer.style.display = 'none';
-                recordingIndicator.style.display = 'none';
+                if (visualizer) visualizer.style.display = 'none';
+                if (recordingIndicator) recordingIndicator.style.display = 'none';
                 break;
             case 'error':
                 voiceButton.style.display = 'inline-block';
                 stopButton.style.display = 'none';
                 status.textContent = 'Voice input error - try again';
                 status.className = 'voice-status error';
-                visualizer.style.display = 'none';
-                recordingIndicator.style.display = 'none';
+                if (visualizer) visualizer.style.display = 'none';
+                if (recordingIndicator) recordingIndicator.style.display = 'none';
                 break;
         }
     }
 
     // Update answer text when voice recognition returns results
-    voiceRecognition.onResult = function(transcript) {
-        const answerTextarea = document.getElementById('answer');
-        answerTextarea.value = transcript;
-        document.getElementById('voicePreview').textContent = transcript;
-    };
+    if (typeof voiceRecognition !== 'undefined') {
+        voiceRecognition.onResult = function(transcript) {
+            console.log('💬 Voice recognition result:', transcript);
+            const answerTextarea = document.getElementById('answer');
+            if (answerTextarea) {
+                answerTextarea.value = transcript;
+            }
+            const voicePreview = document.getElementById('voicePreview');
+            if (voicePreview) {
+                voicePreview.textContent = transcript;
+            }
+        };
+    }
 
-    // Form submission
+    // Form submission handler
     document.getElementById('answerForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        console.log('📤 Form submitted');
         
         const answer = document.getElementById('answer').value;
         if (!answer.trim()) {
-            alert('Please provide an answer before submitting.');
-            return;
+            document.getElementById('answer').value = '[No response provided]';
         }
+        
+        // Stop all timers
+        interviewTimer.stopAllTimers();
+        
+        // Stop voice recognition if available
+        if (typeof voiceRecognition !== 'undefined') {
+            voiceRecognition.stopListening();
+        }
+        
+        // Stop TTS if available
+        textToSpeech.stop();
         
         // Show loading
         document.getElementById('loadingOverlay').style.display = 'flex';
@@ -203,46 +652,41 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.status);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('✅ Submit answer response:', data);
             document.getElementById('loadingOverlay').style.display = 'none';
             
             // Show feedback
             document.getElementById('feedbackContent').innerHTML = `
-                <p><strong>Score:</strong> ${data.score}/10</p>
+                <p><strong>AI Assessment:</strong> ${data.score}/10</p>
                 <p><strong>Feedback:</strong> ${data.feedback}</p>
             `;
             
             document.getElementById('feedbackSection').style.display = 'block';
-            
-            // Scroll to feedback
             document.getElementById('feedbackSection').scrollIntoView({ behavior: 'smooth' });
             
-            // Stop timer
-            clearInterval(timer);
-
-            // Handle completion
+            // Start countdown for next question
             if (data.completed) {
-                document.getElementById('nextQuestionBtn').textContent = 'View Results';
+                document.getElementById('nextQuestionBtn').textContent = 'View Final Results';
                 document.getElementById('nextQuestionBtn').onclick = function() {
                     window.location.href = '/results';
                 };
+                document.querySelector('.auto-next-countdown').style.display = 'none';
+            } else {
+                interviewTimer.startNextCountdown(3);
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('❌ Error submitting answer:', error);
             document.getElementById('loadingOverlay').style.display = 'none';
-            alert('Error submitting answer. Please try again.');
+            alert('Error submitting response. Please try again.');
         });
-    });
-
-    // Next question button
-    document.getElementById('nextQuestionBtn').addEventListener('click', function() {
-        if (this.textContent === 'View Results') {
-            window.location.href = '/results';
-        } else {
-            window.location.reload();
-        }
     });
 
     // Skip question
@@ -253,23 +697,77 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Video controls
-    document.getElementById('toggleVideo').addEventListener('click', function() {
-        const video = document.getElementById('interviewVideo');
-        if (video.style.display === 'none') {
-            video.style.display = 'block';
-            this.textContent = '📹 Hide Video';
-        } else {
-            video.style.display = 'none';
-            this.textContent = '📹 Show Video';
-        }
-    });
-
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', function() {
-        clearInterval(timer);
-        voiceRecognition.stopListening();
-    });
+    console.log('🎯 All event listeners attached - TTS is ready!');
 });
 </script>
+
+<style>
+.permission-warning {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.permission-warning .warning-content {
+    text-align: center;
+}
+
+.permission-warning h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.permission-steps {
+    background: rgba(255,255,255,0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.permission-steps ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.permission-steps li {
+    margin: 0.5rem 0;
+}
+
+.btn-large {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.camera-placeholder {
+    background: #f8f9fa;
+    border: 3px dashed #dee2e6;
+    border-radius: 12px;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.placeholder-content {
+    text-align: center;
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+</style>
 {% endblock %}
